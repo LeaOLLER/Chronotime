@@ -27,23 +27,14 @@ public class TabInfoServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        System.out.println("Message reçu : " + message);
         if (message != null) {
             String[] parts = message.split("\\|");
             if (parts.length >= 2) {
                 String title = parts[0].trim();
-                String url = parts[parts.length - 1].trim(); // Prendre la dernière partie comme URL
-                
-                System.out.println("Titre : " + title);
-                System.out.println("URL : " + url);
-                
+                String url = parts[parts.length - 1].trim();
                 currentTabTitle.set(title);
                 currentTabUrl.set(url);
-            } else {
-                System.out.println("Message invalide (pas assez de parties)");
             }
-        } else {
-            System.out.println("Message null reçu");
         }
     }
 
