@@ -8,7 +8,8 @@
     "scripting"
   ],
   "host_permissions": [
-    "ws://localhost:12345/",
+    "ws://localhost:*/*",
+    "http://localhost:*/*",
     "*://*.discord.com/*"
   ],
   "background": {

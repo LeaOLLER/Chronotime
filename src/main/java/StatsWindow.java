@@ -417,12 +417,12 @@ public class StatsWindow extends Stage {
         nameCol.setCellValueFactory(data -> new SimpleStringProperty(extractDomain(data.getValue().getKey())));
         nameCol.prefWidthProperty().bind(table.widthProperty().multiply(0.7));
         nameCol.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setAlignment(Pos.CENTER);
-            }
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty ? null : item);
+                    setAlignment(Pos.CENTER);
+                }
         });
 
         // Colonne du temps
@@ -434,12 +434,12 @@ public class StatsWindow extends Stage {
         });
         timeCol.prefWidthProperty().bind(table.widthProperty().multiply(0.3));
         timeCol.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? null : item);
-                setAlignment(Pos.CENTER);
-            }
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty ? null : item);
+                    setAlignment(Pos.CENTER);
+                }
         });
 
         // Ajuster les largeurs des colonnes

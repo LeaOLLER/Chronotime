@@ -16,8 +16,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.io.IOException;
 import javafx.collections.FXCollections;
+import java.net.Socket;
+import java.net.InetSocketAddress;
 
 public class ModernChronometer extends Application {
+    private static final int WEBSOCKET_PORT = 12345;
+    
     private Timeline timeline;
     private Label timeLabel;
     private Label tabLabel;
@@ -31,6 +35,7 @@ public class ModernChronometer extends Application {
     private double yOffset = 0;
     private Stage stage;
     private TabInfoServer tabInfoServer;
+    private ConfigServer configServer;
     private int extensionSeconds = 0;
     private String lastTabType = "";
     private Map<String, Integer> tabTypeSeconds = new HashMap<>();
@@ -47,15 +52,64 @@ public class ModernChronometer extends Application {
     private Label todoLabel;
     private TextArea todoTextArea;
 
+    private static void cleanupWebSocketPort() {
+        try {
+            // D'abord, vérifier si le port est utilisé
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress("localhost", WEBSOCKET_PORT), 100);
+                // Si on arrive ici, le port est occupé
+                System.out.println("Port " + WEBSOCKET_PORT + " est occupé, tentative de libération...");
+                
+                // Utiliser lsof pour trouver le PID
+                Process lsofProcess = Runtime.getRuntime().exec("lsof -t -i:" + WEBSOCKET_PORT);
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(lsofProcess.getInputStream()));
+                String pid = reader.readLine();
+                
+                if (pid != null && !pid.trim().isEmpty()) {
+                    // Tuer le processus avec SIGKILL
+                    Runtime.getRuntime().exec("kill -9 " + pid.trim());
+                    System.out.println("Processus " + pid.trim() + " tué.");
+                }
+                
+                // Utiliser aussi fuser comme backup
+                Runtime.getRuntime().exec("fuser -k -9 " + WEBSOCKET_PORT + "/tcp");
+                
+                // Attendre que le port soit libéré
+                Thread.sleep(2000);
+            }
+        } catch (IOException e) {
+            // Si on arrive ici avec une IOException, c'est probablement que le port est déjà libre
+            System.out.println("Port " + WEBSOCKET_PORT + " est libre.");
+        } catch (Exception e) {
+            System.err.println("Erreur lors du nettoyage du port : " + e.getMessage());
+        }
+    }
+
     @Override
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
         sessionManager = new SessionManager();
         tabTracker = new ChromeTabTracker();
+        
+        // Démarrer le serveur de configuration
+        try {
+            configServer = new ConfigServer();
+        } catch (IOException e) {
+            System.err.println("Erreur lors du démarrage du serveur de configuration : " + e.getMessage());
+        }
+        
+        // Tentative de démarrage du serveur WebSocket
         try {
             tabInfoServer = new TabInfoServer();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors du démarrage du serveur WebSocket : " + e.getMessage());
+            // Afficher une alerte à l'utilisateur
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erreur de démarrage");
+            alert.setHeaderText("Impossible de démarrer le serveur WebSocket");
+            alert.setContentText("Le suivi des onglets Chrome ne sera pas disponible.\nErreur : " + e.getMessage());
+            alert.showAndWait();
         }
         
         // Fenêtre sans bordures et toujours au premier plan
@@ -114,7 +168,7 @@ public class ModernChronometer extends Application {
 
         // Configuration du chronomètre
         setupChronometer();
-
+        
         // Initialisation des composants pour la fin de session (non affichés initialement)
         Label extensionStat = new Label("Temps passé sur des extensions Chrome : " +
             String.format("%02d:%02d:%02d", extensionSeconds / 3600, (extensionSeconds % 3600) / 60, extensionSeconds % 60));
@@ -210,10 +264,32 @@ public class ModernChronometer extends Application {
             primaryStage.setY(event.getScreenY() - yOffset);
         });
 
-        // Bouton de fermeture
+        // Bouton de fermeture avec gestion agressive de l'arrêt
         Button closeButton = new Button("×");
         closeButton.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16;");
-        closeButton.setOnAction(e -> primaryStage.close());
+        closeButton.setOnAction(e -> {
+            // Arrêter le chronomètre
+            if (timeline != null) {
+                timeline.stop();
+            }
+            
+            // Arrêter le serveur WebSocket de manière agressive
+            if (tabInfoServer != null) {
+                tabInfoServer.stop();
+            }
+            
+            // Forcer la fermeture de tous les processus
+            try {
+                Runtime.getRuntime().exec("fuser -k -9 " + WEBSOCKET_PORT + "/tcp");
+                Thread.sleep(200);
+            } catch (Exception ex) {
+                // Ignorer les erreurs
+            }
+            
+            // Fermer la fenêtre et forcer l'arrêt
+            primaryStage.close();
+            System.exit(0);
+        });
         
         titleBar.getChildren().add(closeButton);
         HBox.setMargin(closeButton, new Insets(0, 0, 0, 10));
@@ -458,12 +534,35 @@ public class ModernChronometer extends Application {
 
     @Override
     public void stop() {
-        if (tabTracker != null) {
-            tabTracker.stop();
+        // Arrêter d'abord les timelines
+        if (timeline != null) {
+            timeline.stop();
         }
+        
+        // Arrêter le serveur WebSocket
+        if (tabInfoServer != null) {
+            tabInfoServer.stop();
+        }
+
+        // Arrêter le serveur de configuration
+        if (configServer != null) {
+            configServer.stop();
+        }
+        
+        // Appeler la méthode stop de la classe parente
+        try {
+            super.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // Forcer l'arrêt de l'application
+        System.exit(0);
     }
 
     public static void main(String[] args) {
+        // Nettoyer le port avant de démarrer l'application
+        cleanupWebSocketPort();
         launch(args);
     }
 }
