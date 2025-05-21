@@ -47,7 +47,7 @@ async function sendCurrentTab() {
         }
     } catch (error) {
         console.error('Erreur lors de l\'envoi des informations de l\'onglet:', error);
-    }
+  }
 }
 
 // Écouter les changements d'onglets

@@ -36,6 +36,7 @@ public class ModernChronometer extends Application {
     private Stage stage;
     private TabInfoServer tabInfoServer;
     private ConfigServer configServer;
+    private DiscordReporter discordReporter;
     private int extensionSeconds = 0;
     private String lastTabType = "";
     private Map<String, Integer> tabTypeSeconds = new HashMap<>();
@@ -91,6 +92,9 @@ public class ModernChronometer extends Application {
         this.stage = primaryStage;
         sessionManager = new SessionManager();
         tabTracker = new ChromeTabTracker();
+        
+        // Initialiser le reporter Discord
+        discordReporter = new DiscordReporter(sessionManager);
         
         // Démarrer le serveur de configuration
         try {
@@ -417,7 +421,7 @@ public class ModernChronometer extends Application {
                 
                 sessionManager.addSession(session);
                 endDialog.close();
-                resetChronometer();
+            resetChronometer();
                 
                 // Réinitialiser les statistiques Chrome pour la nouvelle session
                 tabTitleSeconds.clear();
@@ -547,6 +551,16 @@ public class ModernChronometer extends Application {
         // Arrêter le serveur de configuration
         if (configServer != null) {
             configServer.stop();
+        }
+
+        // Arrêter le reporter Discord
+        if (discordReporter != null) {
+            discordReporter.stop();
+        }
+
+        // Fermer la connexion MongoDB
+        if (sessionManager != null) {
+            sessionManager.close();
         }
         
         // Appeler la méthode stop de la classe parente

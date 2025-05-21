@@ -7,25 +7,22 @@ import java.nio.file.*;
 
 public class SessionManager {
     private List<Session> sessions;
-    private static final String SAVE_FILE = "sessions.json";
-    private final Gson gson;
+    private final MongoDBManager mongoManager;
 
     public SessionManager() {
         this.sessions = new ArrayList<>();
-        this.gson = new GsonBuilder()
-            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
-            .create();
+        this.mongoManager = new MongoDBManager();
         loadSessions();
     }
 
     public void addSession(Session session) {
         sessions.add(session);
-        saveSessions();
+        mongoManager.saveSession(session);
     }
 
     public void removeSession(Session session) {
         sessions.remove(session);
-        saveSessions();
+        mongoManager.deleteSession(session);
     }
 
     public List<Session> getSessionsByCategory(String category) {
@@ -63,23 +60,12 @@ public class SessionManager {
     }
 
     private void loadSessions() {
-        try {
-            if (Files.exists(Paths.get(SAVE_FILE))) {
-                String json = Files.readString(Paths.get(SAVE_FILE));
-                Session[] loadedSessions = gson.fromJson(json, Session[].class);
-                sessions = new ArrayList<>(Arrays.asList(loadedSessions));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sessions = mongoManager.loadAllSessions();
     }
 
-    private void saveSessions() {
-        try {
-            String json = gson.toJson(sessions);
-            Files.writeString(Paths.get(SAVE_FILE), json);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void close() {
+        if (mongoManager != null) {
+            mongoManager.close();
         }
     }
 } 
