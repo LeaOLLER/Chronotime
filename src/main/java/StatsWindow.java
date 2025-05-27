@@ -1,3 +1,5 @@
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +31,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class StatsWindow extends Stage {
     private final SessionManager sessionManager;
@@ -110,7 +115,15 @@ public class StatsWindow extends Stage {
         
         tabPane.getTabs().addAll(generalTab, chromeTab);
         
-        Scene scene = new Scene(tabPane);
+        Button exportExcelButton = new Button("Exporter Excel");
+        exportExcelButton.setStyle("-fx-background-radius: 10; -fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+        exportExcelButton.setOnAction(e -> exportExcel());
+        HBox exportBox = new HBox(exportExcelButton);
+        exportBox.setAlignment(Pos.TOP_RIGHT);
+        HBox.setMargin(exportExcelButton, new Insets(2, 10, 2, 0));
+        VBox mainLayout = new VBox(10);
+        mainLayout.getChildren().addAll(exportBox, tabPane);
+        Scene scene = new Scene(mainLayout);
         setScene(scene);
 
         setTitle("Statistiques");
@@ -849,5 +862,95 @@ public class StatsWindow extends Stage {
         tagFilter.getItems().add("Tous les tags");
         tagFilter.getItems().addAll(tagManager.getTagsForCategory(category));
         tagFilter.setValue("Tous les tags");
+    }
+
+    private void exportExcel() {
+        String selectedCategory = categoryFilter.getValue();
+        String selectedTag = tagFilter != null ? tagFilter.getValue() : null;
+        List<Session> filteredSessions = sessionManager.getSessionsByCategory(selectedCategory);
+        if (selectedTag != null && !selectedTag.equals("Tous les tags")) {
+            filteredSessions = filteredSessions.stream()
+                .filter(s -> selectedTag.equals(s.getTag()))
+                .toList();
+        }
+        if (filteredSessions.isEmpty()) return;
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Exporter les sessions (Excel)");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
+        fileChooser.setInitialFileName("export_sessions.xlsx");
+        java.io.File file = fileChooser.showSaveDialog(this);
+        if (file == null) return;
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            // Feuille 1 : Sessions
+            Sheet sheet = workbook.createSheet("Sessions");
+            Row header = sheet.createRow(0);
+            String[] headers = {"Date", "Durée (hh:mm:ss)", "Catégorie", "Tag", "Note", "Fait", "À faire"};
+            for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
+            int rowIdx = 1;
+            for (Session s : filteredSessions) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(s.getDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                row.createCell(1).setCellValue(formatSecondsToHMS(s.getDuration()));
+                row.createCell(2).setCellValue(s.getCategory());
+                row.createCell(3).setCellValue(s.getTag());
+                row.createCell(4).setCellValue(s.getNote());
+                row.createCell(5).setCellValue(s.getDoneText());
+                row.createCell(6).setCellValue(s.getTodoText());
+            }
+            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            // Feuille 2 : Totaux
+            Sheet totaux = workbook.createSheet("Totaux");
+            int rowT = 0;
+            // Totaux par catégorie
+            totaux.createRow(rowT++).createCell(0).setCellValue("Totaux par catégorie");
+            Map<String, Integer> catTotals = filteredSessions.stream().collect(Collectors.groupingBy(Session::getCategory, Collectors.summingInt(Session::getDuration)));
+            for (var entry : catTotals.entrySet()) {
+                Row r = totaux.createRow(rowT++);
+                r.createCell(0).setCellValue(entry.getKey());
+                r.createCell(1).setCellValue(formatSecondsToHMS(entry.getValue()));
+            }
+            rowT++;
+            // Totaux par jour
+            totaux.createRow(rowT++).createCell(0).setCellValue("Totaux par jour");
+            Map<String, Integer> dayTotals = filteredSessions.stream().collect(Collectors.groupingBy(s -> s.getDateTime().toLocalDate().toString(), Collectors.summingInt(Session::getDuration)));
+            for (var entry : dayTotals.entrySet()) {
+                Row r = totaux.createRow(rowT++);
+                r.createCell(0).setCellValue(entry.getKey());
+                r.createCell(1).setCellValue(formatSecondsToHMS(entry.getValue()));
+            }
+            rowT++;
+            // Totaux par semaine
+            totaux.createRow(rowT++).createCell(0).setCellValue("Totaux par semaine");
+            Map<String, Integer> weekTotals = filteredSessions.stream().collect(Collectors.groupingBy(s -> {
+                LocalDate d = s.getDateTime().toLocalDate();
+                int week = d.get(WeekFields.ISO.weekOfWeekBasedYear());
+                int year = d.getYear();
+                return year + "-S" + week;
+            }, Collectors.summingInt(Session::getDuration)));
+            for (var entry : weekTotals.entrySet()) {
+                Row r = totaux.createRow(rowT++);
+                r.createCell(0).setCellValue(entry.getKey());
+                r.createCell(1).setCellValue(formatSecondsToHMS(entry.getValue()));
+            }
+            for (int i = 0; i < 2; i++) totaux.autoSizeColumn(i);
+
+            // Sauvegarde du fichier
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+                workbook.write(out);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    // Utilitaire pour formater les secondes en hh:mm:ss
+    private String formatSecondsToHMS(int totalSeconds) {
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds % 3600) / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 } 

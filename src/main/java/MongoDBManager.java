@@ -112,7 +112,7 @@ public class MongoDBManager {
             // Utiliser l'ID MongoDB directement s'il existe
             if (session.getMongoId() != null) {
                 collection.deleteOne(Filters.eq("_id", new ObjectId(session.getMongoId())));
-                System.out.println("Session supprimée avec succès de MongoDB Atlas");
+            System.out.println("Session supprimée avec succès de MongoDB Atlas");
             } else {
                 System.err.println("Impossible de supprimer la session : ID MongoDB manquant");
             }
