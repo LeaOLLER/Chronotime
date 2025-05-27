@@ -22,7 +22,9 @@ public class TagManager {
     }
 
     public void addTag(String category, String tag) {
-        categoryTags.computeIfAbsent(category, k -> new ArrayList<>());
+        if (!categoryTags.containsKey(category)) {
+            categoryTags.put(category, new ArrayList<>());
+        }
         if (!categoryTags.get(category).contains(tag)) {
             categoryTags.get(category).add(tag);
             saveTags();
@@ -54,9 +56,15 @@ public class TagManager {
             if (Files.exists(Paths.get(TAGS_FILE))) {
                 String json = Files.readString(Paths.get(TAGS_FILE));
                 categoryTags = gson.fromJson(json, new TypeToken<Map<String, List<String>>>(){}.getType());
+                if (categoryTags == null) {
+                    categoryTags = new HashMap<>();
+                }
+            } else {
+                categoryTags = new HashMap<>();
             }
         } catch (IOException e) {
             System.err.println("Erreur lors du chargement des tags : " + e.getMessage());
+            categoryTags = new HashMap<>();
         }
     }
 } 

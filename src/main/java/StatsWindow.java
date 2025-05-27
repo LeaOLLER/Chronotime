@@ -183,6 +183,57 @@ public class StatsWindow extends Stage {
         // Colonne du tag
         TableColumn<Session, String> tagCol = new TableColumn<>("Tag");
         tagCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getTag()));
+        tagCol.setCellFactory(column -> new TableCell<>() {
+            private final String[] COLORS = {
+                "#2196F3", // Bleu primaire
+                "#4CAF50", // Vert primaire
+                "#FFC107", // Jaune
+                "#FF9800", // Orange
+                "#9C27B0", // Violet
+                "#E91E63", // Rose
+                "#00BCD4", // Cyan
+                "#795548", // Marron
+                "#607D8B", // Bleu gris
+                "#3F51B5", // Indigo
+                "#009688", // Turquoise
+                "#FF5722", // Orange foncé
+                "#673AB7", // Violet profond
+                "#8BC34A", // Vert clair
+                "#FFEB3B"  // Jaune clair
+            };
+
+            // Méthode utilitaire pour déterminer si une couleur est claire
+            private boolean isLightColor(String hexColor) {
+                int r = Integer.valueOf(hexColor.substring(1, 3), 16);
+                int g = Integer.valueOf(hexColor.substring(3, 5), 16);
+                int b = Integer.valueOf(hexColor.substring(5, 7), 16);
+                // Formule de luminosité perçue
+                double luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                return luminance > 180;
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    int colorIndex = Math.abs(item.hashCode()) % COLORS.length;
+                    String color = COLORS[colorIndex];
+                    String textColor = isLightColor(color) ? "#222" : "white";
+                    setStyle(String.format("""
+                        -fx-background-color: %s;
+                        -fx-background-radius: 10;
+                        -fx-padding: 5 10;
+                        -fx-text-fill: %s;
+                        -fx-font-weight: bold;
+                        -fx-alignment: center;
+                        """, color, textColor));
+                }
+            }
+        });
 
         // Colonne des notes
         TableColumn<Session, Void> noteCol = new TableColumn<>("Note");

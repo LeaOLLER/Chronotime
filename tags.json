@@ -3,8 +3,10 @@
     "UI/UX"
   ],
   "Thales": [
-    "UX",
-    "UX/io"
+    "dashboard AIS",
+    "Veille",
+    "Reporting",
+    "Test"
   ],
   "Études": [
     "man"

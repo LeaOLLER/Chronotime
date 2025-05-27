@@ -15,6 +15,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
@@ -169,6 +170,9 @@ public class ModernChronometer extends Application {
             updateTimeLabelColor();
             updateTags();
         });
+
+        // Charger les tags initiaux
+        updateTags();
 
         // Label du temps
         timeLabel = new Label("00:00:00");
@@ -579,33 +583,105 @@ public class ModernChronometer extends Application {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(stage);
-        dialog.setTitle("Ajouter un tag");
+        dialog.setTitle("Gérer les tags");
 
         VBox content = new VBox(10);
         content.setPadding(new Insets(15));
         content.setStyle("-fx-background-color: white; -fx-background-radius: 15;");
 
+        // Liste des tags existants dans un ScrollPane
+        VBox tagsList = new VBox(5);
+        tagsList.setPadding(new Insets(5));
+        Label existingTagsLabel = new Label("Tags existants :");
+        existingTagsLabel.setStyle("-fx-font-weight: bold;");
+        tagsList.getChildren().add(existingTagsLabel);
+
+        ScrollPane scrollPane = new ScrollPane(tagsList);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(200);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        // Zone pour ajouter un nouveau tag
+        HBox addBox = new HBox(10);
+        addBox.setAlignment(Pos.CENTER_LEFT);
         TextField tagField = new TextField();
         tagField.setPromptText("Nouveau tag");
         tagField.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
+        Button addButton = new Button("Ajouter");
+        addButton.setStyle("-fx-background-radius: 15; -fx-font-size: 14; -fx-background-color: #4CAF50; -fx-text-fill: white;");
 
-        Button saveButton = new Button("Ajouter");
-        saveButton.setStyle("-fx-background-radius: 15; -fx-font-size: 14; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+        // Fonction pour mettre à jour la liste des tags
+        class TagListUpdater {
+            // Palette de couleurs harmonieuses
+            private final String[] COLORS = {
+                "#2196F3", // Bleu primaire
+                "#4CAF50", // Vert primaire
+                "#FFC107", // Jaune
+                "#FF9800", // Orange
+                "#9C27B0", // Violet
+                "#E91E63", // Rose
+                "#00BCD4", // Cyan
+                "#795548", // Marron
+                "#607D8B", // Bleu gris
+                "#3F51B5", // Indigo
+                "#009688", // Turquoise
+                "#FF5722", // Orange foncé
+                "#673AB7", // Violet profond
+                "#8BC34A", // Vert clair
+                "#FFEB3B"  // Jaune clair
+            };
+            // Détecter si la couleur est claire
+            private boolean isLightColor(String hexColor) {
+                int r = Integer.valueOf(hexColor.substring(1, 3), 16);
+                int g = Integer.valueOf(hexColor.substring(3, 5), 16);
+                int b = Integer.valueOf(hexColor.substring(5, 7), 16);
+                double luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                return luminance > 180;
+            }
+            void updateList() {
+                tagsList.getChildren().clear();
+                tagsList.getChildren().add(existingTagsLabel);
+                for (String tag : tagManager.getTagsForCategory(categoryBox.getValue())) {
+                    HBox tagBox = new HBox(10);
+                    tagBox.setAlignment(Pos.CENTER_LEFT);
+                    Label tagLabel = new Label(tag);
+                    tagLabel.setWrapText(true);
+                    int colorIndex = Math.abs(tag.hashCode()) % COLORS.length;
+                    String color = COLORS[colorIndex];
+                    String textColor = isLightColor(color) ? "#222" : "white";
+                    tagLabel.setStyle(String.format("-fx-background-color: %s; -fx-background-radius: 10; -fx-padding: 5 10; -fx-text-fill: %s; -fx-font-weight: bold;", color, textColor));
+                    Button deleteButton = new Button("×");
+                    deleteButton.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white; -fx-background-radius: 10;");
+                    deleteButton.setOnAction(e -> {
+                        tagManager.removeTag(categoryBox.getValue(), tag);
+                        updateList();
+                        updateTags();
+                    });
+                    tagBox.getChildren().addAll(tagLabel, deleteButton);
+                    tagsList.getChildren().add(tagBox);
+                }
+            }
+        }
 
-        saveButton.setOnAction(e -> {
+        TagListUpdater updater = new TagListUpdater();
+
+        // Action pour ajouter un nouveau tag
+        addButton.setOnAction(e -> {
             String newTag = tagField.getText().trim();
             if (!newTag.isEmpty()) {
                 tagManager.addTag(categoryBox.getValue(), newTag);
+                tagField.clear();
+                updater.updateList();
                 updateTags();
-                dialog.close();
             }
         });
 
-        content.getChildren().addAll(
-            new Label("Entrez un nouveau tag pour " + categoryBox.getValue() + " :"),
-            tagField,
-            saveButton
-        );
+        addBox.getChildren().addAll(tagField, addButton);
+
+        content.getChildren().addAll(scrollPane, addBox);
+
+        // Afficher la liste initiale des tags
+        updater.updateList();
 
         Scene dialogScene = new Scene(content);
         dialog.setScene(dialogScene);
