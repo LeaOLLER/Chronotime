@@ -1,6 +1,6 @@
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Session {
     private String category;
@@ -9,9 +9,11 @@ public class Session {
     private String doneText;
     private String todoText;
     private int note;
+    private String tag;
     private Map<String, Integer> tabStats; // Statistiques des onglets pour cette session
     private Map<String, Integer> tabOpenCounts; // Nombre d'ouvertures des onglets
     private Map<String, LocalDateTime> tabLastUsed; // Dernière utilisation des onglets
+    private String mongoId;
 
     public Session(String category, LocalDateTime dateTime, int duration, String doneText, String todoText) {
         this.category = category;
@@ -20,6 +22,7 @@ public class Session {
         this.doneText = doneText;
         this.todoText = todoText;
         this.note = 3;
+        this.tag = "";
         this.tabStats = new HashMap<>();
         this.tabOpenCounts = new HashMap<>();
         this.tabLastUsed = new HashMap<>();
@@ -56,4 +59,20 @@ public class Session {
     public String getTodoText() { return todoText; }
     public int getNote() { return note; }
     public void setNote(int note) { this.note = note; }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public String getMongoId() {
+        return mongoId;
+    }
+
+    public void setMongoId(String mongoId) {
+        this.mongoId = mongoId;
+    }
 } 

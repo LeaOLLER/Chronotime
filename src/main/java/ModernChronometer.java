@@ -1,23 +1,30 @@
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.stage.Modality;
-import javafx.scene.paint.Color;
-import javafx.scene.effect.DropShadow;
-import javafx.animation.Timeline;
-import javafx.animation.KeyFrame;
 import javafx.util.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.io.IOException;
-import javafx.collections.FXCollections;
-import java.net.Socket;
-import java.net.InetSocketAddress;
 
 public class ModernChronometer extends Application {
     private static final int WEBSOCKET_PORT = 12345;
@@ -52,6 +59,9 @@ public class ModernChronometer extends Application {
     private TextArea doneTextArea;
     private Label todoLabel;
     private TextArea todoTextArea;
+    private TagManager tagManager;
+    private ComboBox<String> tagBox;
+    private Button addTagButton;
 
     private static void cleanupWebSocketPort() {
         try {
@@ -92,6 +102,7 @@ public class ModernChronometer extends Application {
         this.stage = primaryStage;
         sessionManager = new SessionManager();
         tabTracker = new ChromeTabTracker();
+        tagManager = new TagManager();
         
         // Initialiser le reporter Discord
         discordReporter = new DiscordReporter(sessionManager);
@@ -131,10 +142,33 @@ public class ModernChronometer extends Application {
         
         // Menu déroulant des catégories
         categoryBox = new ComboBox<>();
-        categoryBox.getItems().addAll("Études", "Thales", "Lecture", "Autre");
-        categoryBox.setValue("Études");
+        categoryBox.getItems().addAll("Thales", "Études", "Perso");
+        categoryBox.setValue("Thales");
         categoryBox.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
         categoryBox.setMaxWidth(Double.MAX_VALUE);
+
+        // Conteneur pour les tags
+        HBox tagBoxContainer = new HBox(10);
+        tagBoxContainer.setAlignment(Pos.CENTER);
+
+        // Menu déroulant des tags
+        tagBox = new ComboBox<>();
+        tagBox.setPromptText("Sélectionner un tag");
+        tagBox.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
+        tagBox.setMaxWidth(Double.MAX_VALUE);
+
+        // Bouton pour ajouter un nouveau tag
+        addTagButton = new Button("+");
+        addTagButton.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
+        addTagButton.setOnAction(e -> showAddTagDialog());
+
+        tagBoxContainer.getChildren().addAll(tagBox, addTagButton);
+
+        // Mise à jour des tags quand la catégorie change
+        categoryBox.setOnAction(e -> {
+            updateTimeLabelColor();
+            updateTags();
+        });
 
         // Label du temps
         timeLabel = new Label("00:00:00");
@@ -148,9 +182,6 @@ public class ModernChronometer extends Application {
         tabLabel.setAlignment(Pos.CENTER);
         tabLabel.setMaxWidth(Double.MAX_VALUE);
         tabLabel.setWrapText(true);
-
-        // Mise à jour de la couleur en fonction de la catégorie
-        categoryBox.setOnAction(e -> updateTimeLabelColor());
 
         // Conteneur pour les boutons
         HBox buttonBox = new HBox(10);
@@ -212,6 +243,7 @@ public class ModernChronometer extends Application {
         root.getChildren().addAll(
             titleBar,
             categoryBox,
+            tagBoxContainer,
             timeLabel,
             tabLabel,
             buttonBox
@@ -413,6 +445,7 @@ public class ModernChronometer extends Application {
                     todoTextArea.getText()
                 );
                 session.setNote(currentNote[0]);
+                session.setTag(tagBox.getValue());
                 
                 // Sauvegarder les statistiques Chrome
                 session.setTabStats(new HashMap<>(tabTitleSeconds));
@@ -478,10 +511,10 @@ public class ModernChronometer extends Application {
     private void updateTimeLabelColor() {
         String category = categoryBox.getValue();
         String color = switch (category) {
-            case "Études" -> "#4CAF50";
             case "Thales" -> "#2196F3";
-            case "Lecture" -> "#FF9800";
-            default -> "#9C27B0";
+            case "Études" -> "#4CAF50";
+            case "Perso" -> "#FF9800";
+            default -> "#2196F3";
         };
         timeLabel.setStyle("-fx-font-size: 40; -fx-font-family: 'Segoe UI'; -fx-text-fill: " + color + ";");
     }
@@ -534,6 +567,54 @@ public class ModernChronometer extends Application {
         }
         
         return domain;
+    }
+
+    private void updateTags() {
+        String category = categoryBox.getValue();
+        tagBox.getItems().clear();
+        tagBox.getItems().addAll(tagManager.getTagsForCategory(category));
+    }
+
+    private void showAddTagDialog() {
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(stage);
+        dialog.setTitle("Ajouter un tag");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(15));
+        content.setStyle("-fx-background-color: white; -fx-background-radius: 15;");
+
+        TextField tagField = new TextField();
+        tagField.setPromptText("Nouveau tag");
+        tagField.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
+
+        Button saveButton = new Button("Ajouter");
+        saveButton.setStyle("-fx-background-radius: 15; -fx-font-size: 14; -fx-background-color: #4CAF50; -fx-text-fill: white;");
+
+        saveButton.setOnAction(e -> {
+            String newTag = tagField.getText().trim();
+            if (!newTag.isEmpty()) {
+                tagManager.addTag(categoryBox.getValue(), newTag);
+                updateTags();
+                dialog.close();
+            }
+        });
+
+        content.getChildren().addAll(
+            new Label("Entrez un nouveau tag pour " + categoryBox.getValue() + " :"),
+            tagField,
+            saveButton
+        );
+
+        Scene dialogScene = new Scene(content);
+        dialog.setScene(dialogScene);
+        
+        // Centrer la popup par rapport à la fenêtre principale
+        dialog.setX(stage.getX() + (stage.getWidth() - dialog.getWidth()) / 2);
+        dialog.setY(stage.getY() + (stage.getHeight() - dialog.getHeight()) / 2);
+        
+        dialog.showAndWait();
     }
 
     @Override

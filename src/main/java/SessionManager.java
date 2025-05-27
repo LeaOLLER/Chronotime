@@ -1,9 +1,9 @@
-import java.util.*;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
-import com.google.gson.*;
-import java.io.*;
-import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class SessionManager {
     private List<Session> sessions;
@@ -21,8 +21,8 @@ public class SessionManager {
     }
 
     public void removeSession(Session session) {
-        sessions.remove(session);
         mongoManager.deleteSession(session);
+        sessions.remove(session);
     }
 
     public List<Session> getSessionsByCategory(String category) {

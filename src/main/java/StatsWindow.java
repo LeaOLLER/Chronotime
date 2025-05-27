@@ -1,23 +1,35 @@
-import javafx.scene.Scene;
-import javafx.scene.chart.*;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.stage.Stage;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.time.YearMonth;
-import java.time.Year;
-import javafx.stage.Modality;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import java.time.Duration;
+
 import javafx.beans.property.SimpleStringProperty;
-import java.time.LocalDateTime;
+import javafx.collections.FXCollections;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class StatsWindow extends Stage {
     private final SessionManager sessionManager;
@@ -32,6 +44,8 @@ public class StatsWindow extends Stage {
     private final Map<String, LocalDateTime> tabLastUsed;
     private Session selectedSession;
     private Tab chromeTab;
+    private final TagManager tagManager;
+    private ComboBox<String> tagFilter;
 
     public StatsWindow(SessionManager sessionManager, ChromeTabTracker tabTracker, Map<String, Integer> tabTitleSeconds, Map<String, Integer> tabOpenCounts, Map<String, LocalDateTime> tabLastUsed) {
         this.sessionManager = sessionManager;
@@ -39,6 +53,7 @@ public class StatsWindow extends Stage {
         this.tabTitleSeconds = tabTitleSeconds;
         this.tabOpenCounts = tabOpenCounts;
         this.tabLastUsed = tabLastUsed;
+        this.tagManager = new TagManager();
         this.root = new VBox(10);
         this.root.setPadding(new Insets(10));
 
@@ -48,9 +63,17 @@ public class StatsWindow extends Stage {
 
         // Filtre par catégorie
         categoryFilter = new ComboBox<>();
-        categoryFilter.getItems().addAll("Études", "Thales", "Lecture", "Autre");
-        categoryFilter.setValue("Études");
-        categoryFilter.setOnAction(e -> updateStats());
+        categoryFilter.getItems().addAll("Thales", "Études", "Perso");
+        categoryFilter.setValue("Thales");
+        categoryFilter.setOnAction(e -> {
+            updateStats();
+            updateTagFilter();
+        });
+
+        // Filtre par tag
+        tagFilter = new ComboBox<>();
+        tagFilter.setPromptText("Tous les tags");
+        tagFilter.setOnAction(e -> updateStats());
 
         // Filtre par période
         periodFilter = new ComboBox<>();
@@ -60,6 +83,7 @@ public class StatsWindow extends Stage {
 
         filterBox.getChildren().addAll(
             new Label("Catégorie: "), categoryFilter,
+            new Label("Tag: "), tagFilter,
             new Label("Période: "), periodFilter
         );
 
@@ -103,8 +127,13 @@ public class StatsWindow extends Stage {
         filterBox.setAlignment(Pos.CENTER_LEFT);
 
         ComboBox<String> categoryFilter = new ComboBox<>();
-        categoryFilter.getItems().addAll("Études", "Thales", "Lecture", "Autre");
-        categoryFilter.setValue("Études");
+        categoryFilter.getItems().addAll("Thales", "Études", "Perso");
+        categoryFilter.setValue("Thales");
+
+        ComboBox<String> tagFilter = new ComboBox<>();
+        tagFilter.setPromptText("Tous les tags");
+        tagFilter.getItems().add("Tous les tags");
+        tagFilter.getItems().addAll(tagManager.getTagsForCategory(categoryFilter.getValue()));
 
         ComboBox<String> periodFilter = new ComboBox<>();
         periodFilter.getItems().addAll("Jour", "Semaine", "Mois", "Année");
@@ -112,13 +141,14 @@ public class StatsWindow extends Stage {
 
         filterBox.getChildren().addAll(
             new Label("Catégorie: "), categoryFilter,
+            new Label("Tag: "), tagFilter,
             new Label("Période: "), periodFilter
         );
 
         content.getChildren().add(filterBox);
 
         // Liste des sessions
-        List<Session> sessions = sessionManager.getSessions();
+        List<Session> sessions = sessionManager.getSessionsByCategory(categoryFilter.getValue());
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
         TableView<Session> table = new TableView<>();
@@ -149,6 +179,10 @@ public class StatsWindow extends Stage {
                 setAlignment(Pos.CENTER);
             }
         });
+
+        // Colonne du tag
+        TableColumn<Session, String> tagCol = new TableColumn<>("Tag");
+        tagCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getTag()));
 
         // Colonne des notes
         TableColumn<Session, Void> noteCol = new TableColumn<>("Note");
@@ -261,16 +295,39 @@ public class StatsWindow extends Stage {
             }
         });
 
-        table.getColumns().addAll(dateCol, durationCol, noteCol, detailsCol, selectForChromeCol, deleteCol);
+        table.getColumns().addAll(dateCol, durationCol, tagCol, noteCol, detailsCol, selectForChromeCol, deleteCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         // Ajuster les largeurs des colonnes
         dateCol.prefWidthProperty().bind(table.widthProperty().multiply(0.20));
         durationCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
-        noteCol.prefWidthProperty().bind(table.widthProperty().multiply(0.20));
+        tagCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
+        noteCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
         detailsCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
-        selectForChromeCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
-        deleteCol.prefWidthProperty().bind(table.widthProperty().multiply(0.15));
+        selectForChromeCol.prefWidthProperty().bind(table.widthProperty().multiply(0.10));
+        deleteCol.prefWidthProperty().bind(table.widthProperty().multiply(0.10));
+
+        // Mise à jour du tableau quand les filtres changent
+        categoryFilter.setOnAction(e -> {
+            String category = categoryFilter.getValue();
+            table.setItems(FXCollections.observableArrayList(sessionManager.getSessionsByCategory(category)));
+            tagFilter.getItems().clear();
+            tagFilter.getItems().add("Tous les tags");
+            tagFilter.getItems().addAll(tagManager.getTagsForCategory(category));
+            tagFilter.setValue("Tous les tags");
+        });
+
+        tagFilter.setOnAction(e -> {
+            String category = categoryFilter.getValue();
+            String tag = tagFilter.getValue();
+            List<Session> filteredSessions = sessionManager.getSessionsByCategory(category);
+            if (tag != null && !tag.equals("Tous les tags")) {
+                filteredSessions = filteredSessions.stream()
+                    .filter(s -> tag.equals(s.getTag()))
+                    .toList();
+            }
+            table.setItems(FXCollections.observableArrayList(filteredSessions));
+        });
 
         table.setItems(FXCollections.observableArrayList(sessions));
 
@@ -307,8 +364,12 @@ public class StatsWindow extends Stage {
 
         content.getChildren().add(barChart);
 
-        // À la fin, ajoute un listener pour mettre à jour le graphique dynamiquement :
-        categoryFilter.setOnAction(e -> updateStatsWithFilters(content, categoryFilter, periodFilter));
+        // À la fin, ajoute un listener pour mettre à jour le graphique et le tableau dynamiquement :
+        categoryFilter.setOnAction(e -> {
+            updateStatsWithFilters(content, categoryFilter, periodFilter);
+            // Mettre à jour le tableau avec les sessions filtrées
+            table.setItems(FXCollections.observableArrayList(sessionManager.getSessionsByCategory(categoryFilter.getValue())));
+        });
         periodFilter.setOnAction(e -> updateStatsWithFilters(content, categoryFilter, periodFilter));
 
         // Affiche la première fois
@@ -533,49 +594,41 @@ public class StatsWindow extends Stage {
     }
 
     private void updateStats() {
-        // Mise à jour des détails
-        detailsBox.getChildren().clear();
+        String selectedCategory = categoryFilter.getValue();
+        String selectedTag = tagFilter.getValue();
+        List<Session> filteredSessions = sessionManager.getSessionsByCategory(selectedCategory);
         
-        // En-tête des détails
-        HBox header = new HBox(10);
-        header.setAlignment(Pos.CENTER_LEFT);
-        Label dateHeader = new Label("Date");
-        Label durationHeader = new Label("Durée");
-        dateHeader.setStyle("-fx-font-weight: bold");
-        durationHeader.setStyle("-fx-font-weight: bold");
-        header.getChildren().addAll(dateHeader, durationHeader);
-        detailsBox.getChildren().add(header);
+        if (selectedTag != null && !selectedTag.equals("Tous les tags")) {
+            filteredSessions = filteredSessions.stream()
+                .filter(s -> selectedTag.equals(s.getTag()))
+                .toList();
+        }
 
-        // Liste des sessions
-        List<Session> sessions = sessionManager.getSessionsByCategory(categoryFilter.getValue());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        
-        for (Session session : sessions) {
+        detailsBox.getChildren().clear();
+        for (Session session : filteredSessions) {
             HBox sessionBox = new HBox(10);
             sessionBox.setAlignment(Pos.CENTER_LEFT);
-            
-            Label dateLabel = new Label(session.getDateTime().format(formatter));
-            
-            int hours = session.getDuration() / 3600;
-            int minutes = (session.getDuration() % 3600) / 60;
-            int seconds = session.getDuration() % 60;
-            Label durationLabel = new Label(String.format("%02d:%02d:%02d", hours, minutes, seconds));
-            
-            // Ajout des boutons pour voir les détails
+            Label dateLabel = new Label(session.getDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+            Label durationLabel = new Label(String.format("Durée: %02d:%02d:%02d", 
+                session.getDuration() / 3600, 
+                (session.getDuration() % 3600) / 60, 
+                session.getDuration() % 60));
+            Label tagLabel = new Label(session.getTag().isEmpty() ? "" : "[" + session.getTag() + "]");
+            tagLabel.setStyle("-fx-text-fill: #666666;");
             Button detailsButton = new Button("Détails");
-            detailsButton.setOnAction(e -> showSessionDetails(session));
-            
+            detailsButton.setOnAction(e -> {
+                selectedSession = session;
+                updateChromeStats();
+                tabPane.getSelectionModel().select(chromeTab);
+            });
             Button deleteButton = new Button("Supprimer");
             deleteButton.setOnAction(e -> {
                 sessionManager.removeSession(session);
                 updateStats();
             });
-            
-            sessionBox.getChildren().addAll(dateLabel, durationLabel, detailsButton, deleteButton);
+            sessionBox.getChildren().addAll(dateLabel, durationLabel, tagLabel, detailsButton, deleteButton);
             detailsBox.getChildren().add(sessionBox);
         }
-
-        // Mise à jour du graphique
         updateChart();
     }
 
@@ -609,10 +662,9 @@ public class StatsWindow extends Stage {
         barChart.setLegendVisible(false);
 
         String color = switch (categoryFilter.getValue()) {
-            case "Études" -> "#4CAF50";
             case "Thales" -> "#2196F3";
-            case "Lecture" -> "#FF9800";
-            case "Autre" -> "#9C27B0";
+            case "Études" -> "#4CAF50";
+            case "Perso" -> "#FF9800";
             default -> "#2196F3";
         };
 
@@ -738,5 +790,13 @@ public class StatsWindow extends Stage {
         if (selectedSession != null) {
             chromeTab.setContent(createChromeStatsContent());
         }
+    }
+
+    private void updateTagFilter() {
+        String category = categoryFilter.getValue();
+        tagFilter.getItems().clear();
+        tagFilter.getItems().add("Tous les tags");
+        tagFilter.getItems().addAll(tagManager.getTagsForCategory(category));
+        tagFilter.setValue("Tous les tags");
     }
 } 
