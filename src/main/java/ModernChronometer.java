@@ -143,7 +143,7 @@ public class ModernChronometer extends Application {
         
         // Menu déroulant des catégories
         categoryBox = new ComboBox<>();
-        categoryBox.getItems().addAll("Thales", "Études", "Perso");
+        categoryBox.getItems().addAll("Thales", "Études", "Perso", "ACADOMIA");
         categoryBox.setValue("Thales");
         categoryBox.setStyle("-fx-background-radius: 15; -fx-font-size: 14;");
         categoryBox.setMaxWidth(Double.MAX_VALUE);
@@ -518,6 +518,7 @@ public class ModernChronometer extends Application {
             case "Thales" -> "#2196F3";
             case "Études" -> "#4CAF50";
             case "Perso" -> "#FF9800";
+            case "ACADOMIA" -> "#B388FF";
             default -> "#2196F3";
         };
         timeLabel.setStyle("-fx-font-size: 40; -fx-font-family: 'Segoe UI'; -fx-text-fill: " + color + ";");

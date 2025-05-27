@@ -68,7 +68,7 @@ public class StatsWindow extends Stage {
 
         // Filtre par catégorie
         categoryFilter = new ComboBox<>();
-        categoryFilter.getItems().addAll("Thales", "Études", "Perso");
+        categoryFilter.getItems().addAll("Thales", "Études", "Perso", "ACADOMIA");
         categoryFilter.setValue("Thales");
         categoryFilter.setOnAction(e -> {
             updateStats();
@@ -140,7 +140,7 @@ public class StatsWindow extends Stage {
         filterBox.setAlignment(Pos.CENTER_LEFT);
 
         ComboBox<String> categoryFilter = new ComboBox<>();
-        categoryFilter.getItems().addAll("Thales", "Études", "Perso");
+        categoryFilter.getItems().addAll("Thales", "Études", "Perso", "ACADOMIA");
         categoryFilter.setValue("Thales");
 
         ComboBox<String> tagFilter = new ComboBox<>();
@@ -212,7 +212,8 @@ public class StatsWindow extends Stage {
                 "#FF5722", // Orange foncé
                 "#673AB7", // Violet profond
                 "#8BC34A", // Vert clair
-                "#FFEB3B"  // Jaune clair
+                "#FFEB3B", // Jaune clair
+                "#B388FF"  // ACADOMIA (violet clair)
             };
 
             // Méthode utilitaire pour déterminer si une couleur est claire
