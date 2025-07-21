@@ -197,20 +197,20 @@ public class ModernChronometer extends Application {
         buttonBox.setAlignment(Pos.CENTER);
         
         // Boutons
-        Button playButton = createImageButton("play.png", "#4CAF50");
+        startButton = createImageButton("play.png", "#4CAF50");
         Button resetButton = createImageButton("replay.png", "#FF9800");
         Button finishButton = createImageButton("check.png", "#2196F3");
         Button statsButton = createImageButton("stats.png", "#9C27B0");
         Button discordButton = createImageButton("report.png", "#5865F2");
 
         // Actions des boutons
-        playButton.setOnAction(e -> toggleChronometer());
+        startButton.setOnAction(e -> toggleChronometer());
         resetButton.setOnAction(e -> resetChronometer());
         finishButton.setOnAction(e -> finishSession());
         statsButton.setOnAction(e -> showStats());
         discordButton.setOnAction(e -> sendDiscordReport());
 
-        buttonBox.getChildren().addAll(playButton, resetButton, finishButton, statsButton, discordButton);
+        buttonBox.getChildren().addAll(startButton, resetButton, finishButton, statsButton, discordButton);
 
         // Configuration du chronomètre
         setupChronometer();
