@@ -4,15 +4,18 @@ import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -196,14 +199,16 @@ public class ModernChronometer extends Application {
         Button resetButton = createButton("⟲", "#FF9800");
         Button finishButton = createButton("✓", "#2196F3");
         Button statsButton = createButton("📊", "#9C27B0");
+        Button discordButton = createButton("💬", "#5865F2");
 
         // Actions des boutons
         startButton.setOnAction(e -> toggleChronometer());
         resetButton.setOnAction(e -> resetChronometer());
         finishButton.setOnAction(e -> finishSession());
         statsButton.setOnAction(e -> showStats());
+        discordButton.setOnAction(e -> sendDiscordReport());
 
-        buttonBox.getChildren().addAll(startButton, resetButton, finishButton, statsButton);
+        buttonBox.getChildren().addAll(startButton, resetButton, finishButton, statsButton, discordButton);
 
         // Configuration du chronomètre
         setupChronometer();
@@ -692,6 +697,33 @@ public class ModernChronometer extends Application {
         dialog.setY(stage.getY() + (stage.getHeight() - dialog.getHeight()) / 2);
         
         dialog.showAndWait();
+    }
+
+    private void sendDiscordReport() {
+        // Afficher une notification de confirmation
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Rapport Discord");
+        confirmAlert.setHeaderText("Générer le rapport hebdomadaire");
+        confirmAlert.setContentText("Voulez-vous envoyer le rapport hebdomadaire sur Discord maintenant ?");
+        
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Exécuter l'envoi dans un thread séparé pour ne pas bloquer l'interface
+            new Thread(() -> {
+                boolean success = discordReporter.sendManualWeeklyReport();
+                
+                // Retourner sur le thread JavaFX pour afficher l'alerte de résultat
+                Platform.runLater(() -> {
+                    Alert resultAlert = new Alert(success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
+                    resultAlert.setTitle("Rapport Discord");
+                    resultAlert.setHeaderText(success ? "Succès !" : "Erreur");
+                    resultAlert.setContentText(success ? 
+                        "Le rapport hebdomadaire a été envoyé avec succès sur Discord ! 🎉" :
+                        "Une erreur s'est produite lors de l'envoi du rapport. Vérifiez votre connexion internet et réessayez.");
+                    resultAlert.showAndWait();
+                });
+            }).start();
+        }
     }
 
     @Override

@@ -25,4 +25,24 @@ target/
 
 # Fichiers système
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# JavaFX SDK (ne pas commiter les librairies externes)
+javafx-sdk-*/
+javafx*.zip
+
+# Fichiers de configuration temporaires
+config_port.txt
+websocket_port.txt
+
+# Extensions Chrome générées
+*.crx
+*.pem
+
+# Librairies natives
+*.so
+*.dll
+*.dylib
+
+# Fichiers de données temporaires
+sessions.json 
