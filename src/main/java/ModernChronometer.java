@@ -29,6 +29,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 public class ModernChronometer extends Application {
     private static final int WEBSOCKET_PORT = 12345;
@@ -195,20 +197,20 @@ public class ModernChronometer extends Application {
         buttonBox.setAlignment(Pos.CENTER);
         
         // Boutons
-        startButton = createButton("▶", "#4CAF50");
-        Button resetButton = createButton("⟲", "#FF9800");
-        Button finishButton = createButton("✓", "#2196F3");
-        Button statsButton = createButton("📊", "#9C27B0");
-        Button discordButton = createButton("💬", "#5865F2");
+        Button playButton = createImageButton("play.png", "#4CAF50");
+        Button resetButton = createImageButton("replay.png", "#FF9800");
+        Button finishButton = createImageButton("check.png", "#2196F3");
+        Button statsButton = createImageButton("stats.png", "#9C27B0");
+        Button discordButton = createImageButton("report.png", "#5865F2");
 
         // Actions des boutons
-        startButton.setOnAction(e -> toggleChronometer());
+        playButton.setOnAction(e -> toggleChronometer());
         resetButton.setOnAction(e -> resetChronometer());
         finishButton.setOnAction(e -> finishSession());
         statsButton.setOnAction(e -> showStats());
         discordButton.setOnAction(e -> sendDiscordReport());
 
-        buttonBox.getChildren().addAll(startButton, resetButton, finishButton, statsButton, discordButton);
+        buttonBox.getChildren().addAll(playButton, resetButton, finishButton, statsButton, discordButton);
 
         // Configuration du chronomètre
         setupChronometer();
@@ -356,6 +358,21 @@ public class ModernChronometer extends Application {
         button.setOnMouseEntered(e -> button.setStyle(button.getStyle() + "-fx-opacity: 0.8;"));
         button.setOnMouseExited(e -> button.setStyle(button.getStyle().replace("-fx-opacity: 0.8;", "")));
 
+        return button;
+    }
+
+    private Button createImageButton(String imageName, String color) {
+        Image img = new Image(getClass().getResourceAsStream("/images/" + imageName));
+        ImageView view = new ImageView(img);
+        view.setFitWidth(24);
+        view.setFitHeight(24);
+        Button button = new Button("", view);
+        button.setStyle(String.format(
+            "-fx-background-color: %s; -fx-background-radius: 20; -fx-min-width: 40; -fx-min-height: 40;",
+            color
+        ));
+        button.setOnMouseEntered(e -> button.setStyle(button.getStyle() + "-fx-opacity: 0.8;"));
+        button.setOnMouseExited(e -> button.setStyle(button.getStyle().replace("-fx-opacity: 0.8;", "")));
         return button;
     }
 
