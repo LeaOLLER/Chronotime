@@ -17,7 +17,7 @@ Application de suivi du temps avec intégration Chrome et rapports Discord autom
 - **Temps par tag** : Analyse détaillée de vos activités
 - **Répartition des notes** : Visualisation de votre productivité
 
-### 🔗 Intégration Discord
+### Intégration Discord
 - **Rapports hebdomadaires automatiques** (dimanche 20h)
 - **Génération manuelle** via bouton dans l'interface
 - **Format épuré** sans icônes, facile à lire
@@ -54,6 +54,122 @@ Pour le suivi automatique des onglets :
 2. Activez le "Mode développeur"
 3. Cliquez "Charger l'extension non empaquetée"
 4. Sélectionnez le dossier `chrome_tab_tracker_extension/`
+
+## Configuration Personnalisée
+
+**IMPORTANT** : Avant d'utiliser le projet, vous devez modifier ces éléments pour vos propres données :
+
+### 1. 🗄️ Base de Données MongoDB
+**Fichier** : `src/main/java/MongoDBManager.java` (lignes 24-27)
+
+```java
+// Remplacez par VOS credentials MongoDB Atlas
+private static final String USERNAME = "VOTRE_USERNAME";
+private static final String PASSWORD = "VOTRE_PASSWORD";
+private static final String CLUSTER_URL = "VOTRE_CLUSTER.mongodb.net";
+private static final String DATABASE_NAME = "VOTRE_DATABASE";
+```
+
+**Comment obtenir :**
+1. Créez un compte gratuit sur [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Créez un nouveau cluster
+3. Créez un utilisateur de base de données
+4. Récupérez l'URL de connexion
+
+### 2. Webhook Discord
+**Fichier** : `src/main/java/DiscordReporter.java` (ligne 15)
+
+```java
+// Remplacez par VOTRE webhook Discord
+private static final String WEBHOOK_URL = "https://discord.com/api/webhooks/VOTRE_WEBHOOK_ID/VOTRE_TOKEN";
+```
+
+**Comment obtenir :**
+1. Sur votre serveur Discord, allez dans les paramètres d'un salon
+2. Onglet "Intégrations" → "Webhooks" → "Nouveau Webhook"
+3. Copiez l'URL du webhook généré
+
+### 3. Catégories de Travail
+**Fichier** : `src/main/java/ModernChronometer.java` (ligne 149)
+
+```java
+// Remplacez par VOS catégories de travail
+categoryBox.getItems().addAll("VOTRE_TRAVAIL", "VOS_ETUDES", "VOTRE_PERSO", "AUTRE");
+categoryBox.setValue("VOTRE_TRAVAIL"); // Catégorie par défaut
+```
+
+### 4. Tags Existants (Optionnel)
+**Fichier** : `tags.json` (à la racine)
+
+```json
+{
+  "VOTRE_TRAVAIL": [
+    "projet-1",
+    "réunions",
+    "formation"
+  ],
+  "VOS_ETUDES": [
+    "cours",
+    "exercices"
+  ]
+}
+```
+
+### 5. Nettoyage des Données Existantes
+**Fichiers à supprimer avant la première utilisation :**
+```bash
+# Supprimez ces fichiers pour repartir à zéro
+rm -f sessions.json       # Sessions locales (si elles existent)
+rm -f tags.json          # Tags existants  
+rm -f config_port.txt    # Configuration des ports
+rm -f websocket_port.txt # Configuration WebSocket
+```
+
+### 6. Couleurs par Catégorie (Optionnel)
+**Fichier** : `src/main/java/ModernChronometer.java` (lignes 520-526)
+
+```java
+// Personnalisez les couleurs de vos catégories
+String color = switch (category) {
+    case "VOTRE_TRAVAIL" -> "#2196F3";    // Bleu
+    case "VOS_ETUDES" -> "#4CAF50";       // Vert
+    case "VOTRE_PERSO" -> "#FF9800";      // Orange
+    case "AUTRE" -> "#B388FF";            // Violet
+    default -> "#2196F3";
+};
+```
+
+### 7. Horaire des Rapports (Optionnel)
+**Fichier** : `src/main/java/DiscordReporter.java` (lignes 27-30)
+
+```java
+// Modifiez l'horaire des rapports automatiques
+LocalDateTime nextRun = now.with(TemporalAdjusters.next(DayOfWeek.SUNDAY))  // Jour
+                             .withHour(20)     // Heure (20h = 8PM)
+                             .withMinute(0)    // Minutes
+                             .withSecond(0);   // Secondes
+```
+
+### Après Modification
+
+1. **Recompilez** le projet :
+```bash
+mvn clean compile
+```
+
+2. **Relancez** l'application :
+```bash
+./run.sh
+```
+
+3. **Testez** la connexion Discord avec le bouton 💬
+
+### Points d'Attention
+
+- **MongoDB** : Utilisez le plan gratuit (512MB, suffisant pour des années de données)
+- **Discord** : Testez le webhook dans un salon de test d'abord
+- **Catégories** : Choisissez des noms courts et clairs
+- **Sauvegarde** : Vos données seront sauvées dans MongoDB Atlas (cloud)
 
 ## Utilisation
 
