@@ -1,102 +1,194 @@
-# Chronomètre Moderne avec Suivi d'Activité Chrome
+# Chronotime - Chronomètre Moderne avec Analyse de Productivité et Suivi d'Activité Chrome
 
-Ce projet est un chronomètre moderne qui permet de suivre votre temps passé sur différentes activités, avec une intégration spéciale pour le suivi des onglets Chrome.
+Application de suivi du temps avec intégration Chrome et rapports Discord automatiques pour analyser votre productivité.
 
-## Fonctionnalités
 
-- Chronomètre avec interface moderne
-- Catégorisation des sessions (Études, Thales, Lecture, Autre)
-- Suivi automatique des onglets Chrome actifs
-- Statistiques détaillées par session
-- Système de notation des sessions (1-5 étoiles)
-- Sauvegarde des tâches accomplies et à faire
+### Suivi du Temps
+- **Chronomètre moderne** avec interface JavaFX épurée
+- **Catégorisation** : Thales, Études, Perso, ACADOMIA
+- **Système de tags** personnalisables par catégorie
+- **Notes de productivité** (1-5 étoiles) pour chaque session
+- **Suivi automatique** des onglets Chrome actifs
 
-## Installation
+### Analyse de Productivité
+- **Jours les plus productifs** : Identifie vos meilleurs jours
+- **Créneaux horaires optimaux** : Trouve vos heures de pointe
+- **Notes moyennes** par période et catégorie
+- **Temps par tag** : Analyse détaillée de vos activités
+- **Répartition des notes** : Visualisation de votre productivité
 
-### 1. Application Java
+### 🔗 Intégration Discord
+- **Rapports hebdomadaires automatiques** (dimanche 20h)
+- **Génération manuelle** via bouton dans l'interface
+- **Format épuré** sans icônes, facile à lire
+- **Statistiques complètes** : temps, productivité, sites web
 
-1. Assurez-vous d'avoir Java 17 ou supérieur installé
-2. Clonez le repository
-3. Compilez le projet avec Maven :
+### Sauvegarde
+- **MongoDB Atlas** : Sauvegarde cloud automatique
+- **Export Excel** : Données exportables pour analyse
+- **Persistance locale** : Tags et configurations
+
+## Installation Rapide
+
+### 1. Prérequis
+- **Java 17+** installé
+- **Maven 3.6+** pour la compilation
+- **Chrome** avec extension (optionnel)
+
+### 2. Lancement Simple
 ```bash
-mvn clean install
-```
-4. Lancez l'application :
-```bash
-mvn javafx:run
+git clone [votre-repo]
+cd Chronotime
+./run.sh
 ```
 
-### 2. Extension Chrome
+Le script `run.sh` s'occupe automatiquement de :
+- Télécharger JavaFX (si nécessaire)
+- Compiler le projet
+- Lancer l'application
 
-1. Ouvrez Chrome et allez dans `chrome://extensions/`
-2. Activez le "Mode développeur" (en haut à droite)
-3. Cliquez sur "Charger l'extension non empaquetée"
-4. Sélectionnez le dossier `chrome_tab_tracker_extension` du projet
+### 3. Extension Chrome (Optionnel)
+Pour le suivi automatique des onglets :
+
+1. Ouvrez `chrome://extensions/`
+2. Activez le "Mode développeur"
+3. Cliquez "Charger l'extension non empaquetée"
+4. Sélectionnez le dossier `chrome_tab_tracker_extension/`
 
 ## Utilisation
 
-### Démarrage
+### Interface Principale
+- **▶ Play/Pause** : Démarre/met en pause le chronomètre
+- **⟲ Reset** : Remet à zéro le chronomètre
+- **✓ Terminer** : Sauvegarde la session avec notes et tâches
+- **📊 Statistiques** : Ouvre l'analyse détaillée
+- **💬 Discord** : Génère un rapport hebdomadaire immédiat
 
-1. Lancez l'application Java
-2. Assurez-vous que l'extension Chrome est active
-3. L'application affichera automatiquement les URLs des sites visités dans Chrome
+### Fin de Session
+À chaque fin de session, vous pouvez :
+- **Noter votre productivité** (1-5 étoiles)
+- **Lister les tâches accomplies**
+- **Noter ce qui reste à faire**
+- **Voir les sites visités** (si extension active)
 
-### Interface principale
+### Rapports Discord
+Les rapports incluent automatiquement :
+- **Temps par catégorie** (Thales, Études, etc.)
+- **Temps par tag** (dashboard AIS, Veille, etc.)
+- **Analyse de productivité** (note moyenne, jour optimal)
+- **Top sites visités** avec temps passé
+- **Statistiques globales** (temps total, nombre de sessions)
 
-- 🟢 Bouton Play/Pause : Démarre/met en pause le chronomètre
-- 🔄 Bouton Reset : Réinitialise le chronomètre
-- ✓ Bouton Terminer : Termine la session et enregistre les statistiques
-- 📊 Bouton Statistiques : Affiche les statistiques détaillées
+## Exemple de Rapport Discord
 
-### Fin de session
+```
+**RAPPORT HEBDOMADAIRE**
+Semaine du 15/07/2025
 
-À la fin d'une session, vous pouvez :
-- Noter la session (1-5 étoiles)
-- Lister les tâches accomplies
-- Noter les tâches restantes à faire
-- Voir les statistiques de navigation Chrome
+**TEMPS PAR CATÉGORIE**
+**Thales** : 8h15m
+**Études** : 3h30m
 
-### Statistiques
+**TEMPS PAR TAG**
+**dashboard AIS** : 4h20m
+**Veille** : 2h15m
+**TOEIC** : 1h45m
 
-Les statistiques incluent :
-- Temps total par session
-- Sites web les plus visités
-- Temps passé par site
-- Historique des sessions
+**ANALYSE DE PRODUCTIVITÉ**
+Note moyenne : 3.8/5
+Répartition des notes : 2★(1) 3★(4) 4★(6) 5★(2)
+Jour le plus productif : Mardi (4.2/5)
+Créneau le plus productif : 14h-15h (4.1/5)
 
-## Configuration technique
+**TOP SITES VISITÉS**
+1. github.com : 2h30m
+2. stackoverflow.com : 1h45m
+3. chatgpt.com : 1h20m
 
-### Ports utilisés
+**STATISTIQUES GLOBALES**
+Temps total : 11h45m
+Sessions : 13
+Tags utilisés : 3
+Durée moyenne/session : 0.9h
+```
 
-- Port 12345 : Communication WebSocket entre l'extension Chrome et l'application
+## Configuration Technique
 
-### Structure des fichiers
+### Ports Utilisés
+- **Port 9999** : Serveur de configuration (fixe, pour extension Chrome)
+- **Port dynamique** : Serveur WebSocket (sauvegardé dans `websocket_port.txt`)
 
-- `src/main/java/` : Code source Java
-- `chrome_tab_tracker_extension/` : Code source de l'extension Chrome
-- `target/` : Fichiers compilés
+### Architecture
+```
+├── src/main/java/           # Code source Java
+│   ├── ModernChronometer.java    # Interface principale
+│   ├── DiscordReporter.java      # Génération rapports
+│   ├── ConfigServer.java         # Serveur configuration
+│   ├── TabInfoServer.java        # Serveur WebSocket
+│   └── SessionManager.java       # Gestion des données
+├── chrome_tab_tracker_extension/ # Extension Chrome
+└── run.sh                   # Script de lancement automatique
+```
+
+### Base de Données
+- **MongoDB Atlas** : Stockage cloud des sessions
+- **Format JSON** : Données facilement exportables
+- **Backup automatique** : Pas de perte de données
 
 ## Dépannage
 
-### L'extension ne se connecte pas
-
+### L'extension Chrome ne se connecte pas
 1. Vérifiez que l'application Java est lancée
-2. Assurez-vous que le port 12345 est disponible
-3. Rechargez l'extension dans Chrome
+2. Rechargez l'extension dans Chrome
+3. Consultez la console Chrome (F12) pour les messages
 
-### Les URLs ne s'affichent pas
+### JavaFX ne se télécharge pas
+1. Vérifiez votre connexion internet
+2. Supprimez `javafx.zip` et relancez `./run.sh`
+3. Installez manuellement depuis [OpenJFX.io](https://openjfx.io/)
 
-1. Vérifiez que l'extension est active dans Chrome
-2. Redémarrez l'application Java
-3. Vérifiez les logs dans la console de l'extension Chrome
+### Les rapports Discord ne s'envoient pas
+1. Vérifiez votre connexion internet
+2. Testez le webhook Discord
+3. Consultez les logs de l'application
 
-## Contribution
+## Fonctionnalités Avancées
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
-- Signaler des bugs
-- Proposer des améliorations
-- Soumettre des pull requests
+### Tags Intelligents
+- **Création dynamique** : Ajoutez des tags à la volée
+- **Couleurs automatiques** : Identification visuelle unique
+- **Par catégorie** : Tags organisés par domaine d'activité
 
-## Licence
+### Analyse Temporelle
+- **Patterns quotidiens** : Identifiez vos heures de pointe
+- **Tendances hebdomadaires** : Analysez votre régularité
+- **Corrélation durée/productivité** : Optimisez vos sessions
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails. # Chronometre
+### Export et Partage
+- **Export Excel** : Données tabulaires pour analyse
+- **Rapports Discord** : Partage automatique avec équipe
+- **Sauvegarde cloud** : Données synchronisées
+
+## Optimisation de Productivité
+
+### Conseils d'Utilisation
+1. **Notez systématiquement** : Les notes permettent l'analyse
+2. **Utilisez les tags** : Granularité dans le suivi
+3. **Consultez les rapports** : Identifiez vos patterns
+4. **Adaptez vos horaires** : Exploitez vos créneaux optimaux
+
+### Métriques Clés
+- **Note moyenne** : Indicateur de productivité global
+- **Jour optimal** : Planifiez vos tâches importantes
+- **Créneau de pointe** : Concentrez le travail complexe
+- **Durée optimale** : Trouvez votre rythme idéal
+
+
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+---
+
+**Développé avec ❤️ pour optimiser votre productivité**
