@@ -68,6 +68,8 @@ public class ModernChronometer extends Application {
     private TagManager tagManager;
     private ComboBox<String> tagBox;
     private Button addTagButton;
+    private Image playImage;
+    private Image pauseImage;
 
     private static void cleanupWebSocketPort() {
         try {
@@ -197,11 +199,17 @@ public class ModernChronometer extends Application {
         buttonBox.setAlignment(Pos.CENTER);
         
         // Boutons
-        startButton = createImageButton("play.png", "#4CAF50");
-        Button resetButton = createImageButton("replay.png", "#FF9800");
-        Button finishButton = createImageButton("check.png", "#2196F3");
-        Button statsButton = createImageButton("stats.png", "#9C27B0");
-        Button discordButton = createImageButton("report.png", "#5865F2");
+        playImage = new Image(getClass().getResourceAsStream("/images/play.png"));
+        pauseImage = new Image(getClass().getResourceAsStream("/images/pause.png"));
+        startButton = createImageButton(playImage, "#4CAF50");
+        Image resetImg = new Image(getClass().getResourceAsStream("/images/replay.png"));
+        Button resetButton = createImageButton(resetImg, "#FF9800");
+        Image checkImg = new Image(getClass().getResourceAsStream("/images/check.png"));
+        Button finishButton = createImageButton(checkImg, "#2196F3");
+        Image statsImg = new Image(getClass().getResourceAsStream("/images/stats.png"));
+        Button statsButton = createImageButton(statsImg, "#9C27B0");
+        Image reportImg = new Image(getClass().getResourceAsStream("/images/report.png"));
+        Button discordButton = createImageButton(reportImg, "#5865F2");
 
         // Actions des boutons
         startButton.setOnAction(e -> toggleChronometer());
@@ -361,8 +369,7 @@ public class ModernChronometer extends Application {
         return button;
     }
 
-    private Button createImageButton(String imageName, String color) {
-        Image img = new Image(getClass().getResourceAsStream("/images/" + imageName));
+    private Button createImageButton(Image img, String color) {
         ImageView view = new ImageView(img);
         view.setFitWidth(24);
         view.setFitHeight(24);
@@ -389,10 +396,10 @@ public class ModernChronometer extends Application {
     private void toggleChronometer() {
         running = !running;
         if (running) {
-            startButton.setText("⏸");
+            ((ImageView) startButton.getGraphic()).setImage(pauseImage);
             timeline.play();
         } else {
-            startButton.setText("▶");
+            ((ImageView) startButton.getGraphic()).setImage(playImage);
             timeline.pause();
         }
     }
